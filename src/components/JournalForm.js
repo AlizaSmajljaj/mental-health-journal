@@ -1,29 +1,25 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+// src/components/JournalForm.js
+import React, { useState, useEffect } from 'react';
+import MoodChart from './MoodChart';
 
 const JournalForm = () => {
   const [entry, setEntry] = useState('');
   const [sentiment, setSentiment] = useState('');
+  const [entries, setEntries] = useState([]);
 
-  const handleSubmit = async (e) => {
+  useEffect(() => {
+    const savedEntries = JSON.parse(localStorage.getItem('entries')) || [];
+    setEntries(savedEntries);
+  }, []);
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      const response = await axios.post('https://api.us-south.natural-language-understanding.watson.cloud.ibm.com/instances/xxxxxx/v1/analyze', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${Buffer.from('apikey:your-api-key').toString('base64')}`
-        },
-        data: {
-          text: entry,
-          features: {
-            sentiment: {}
-          }
-        }
-      });
-      setSentiment(response.data.sentiment.document.label);
-    } catch (error) {
-      console.error('Error in sentiment analysis:', error);
-    }
+    const newEntry = { entry, sentiment, date: new Date().toLocaleString() };
+    const updatedEntries = [...entries, newEntry];
+    localStorage.setItem('entries', JSON.stringify(updatedEntries));
+    setEntries(updatedEntries);
+    setEntry('');
+    setSentiment('');
   };
 
   return (
@@ -38,7 +34,21 @@ const JournalForm = () => {
         />
         <button type="submit">Submit</button>
       </form>
+
       {sentiment && <p>Sentiment: {sentiment}</p>}
+
+      <MoodChart entries={entries} />
+
+      <h2>Your Previous Entries</h2>
+      <ul>
+        {entries.map((entry, index) => (
+          <li key={index}>
+            <p>{entry.entry}</p>
+            <p>Sentiment: {entry.sentiment}</p>
+            <p>Date: {entry.date}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
